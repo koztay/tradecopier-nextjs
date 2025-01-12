@@ -1,56 +1,103 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-url', request.url)
+
+  // Create an unmodified response
+  const response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
+  try {
+    // Create a Supabase client configured to use cookies
+    const cookieStore = {
+      get(name: string) {
+        return request.cookies.get(name)?.value
       },
+      set(name: string, value: string, options: CookieOptions) {
+        response.cookies.set({
+          name,
+          value,
+          ...options,
+          sameSite: 'lax',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+        })
+      },
+      remove(name: string, options: CookieOptions) {
+        response.cookies.delete({
+          name,
+          ...options,
+        })
+      }
     }
-  )
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          detectSessionInUrl: true,
+          flowType: 'pkce',
+        },
+        cookies: cookieStore
+      }
+    )
 
-  // If user is not signed in and the current path is not /auth/*, redirect to /auth/login
-  if (!session && !request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    // Refresh session if expired - required for Server Components
+    const { data: { session } } = await supabase.auth.getSession()
+    console.log('Session:', session)
+
+    // OPTIONAL: Get user data
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    console.log('User:', user)
+
+    // Auth routes - redirect to dashboard if logged in
+    if (request.nextUrl.pathname.startsWith('/auth')) {
+      console.log('Auth route, user:', !!user)
+      if (user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+      return response
+    }
+
+    // Protected routes - redirect to login if not logged in
+    if (
+      request.nextUrl.pathname.startsWith('/dashboard') ||
+      request.nextUrl.pathname.startsWith('/settings')
+    ) {
+      console.log('Protected route, user:', !!user)
+      if (!user) {
+        const redirectUrl = new URL('/auth/login', request.url)
+        redirectUrl.searchParams.set('from', request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+      return response
+    }
+
+    return response
+  } catch (e) {
+    // If there's an error, return the unmodified response
+    return response
   }
-
-  // If user is signed in and the current path is /auth/*, redirect to /dashboard
-  if (session && request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 } 

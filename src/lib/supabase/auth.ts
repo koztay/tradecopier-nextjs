@@ -16,7 +16,16 @@ export async function signIn(email: string, password: string) {
     password,
   })
   if (error) throw error
-  return data
+  
+  // Check if user exists and session is valid
+  if (!data.user || !data.session) {
+    throw new Error('Invalid login credentials')
+  }
+
+  return {
+    user: data.user,
+    session: data.session
+  }
 }
 
 export async function signOut() {
