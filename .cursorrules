@@ -1,0 +1,136 @@
+You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI, Tailwind, Supabase, and Prisma.
+
+Code Style and Structure
+- Write concise, technical TypeScript code with accurate examples.
+- Use functional and declarative programming patterns; avoid classes.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Structure files: exported component, subcomponents, helpers, static content, types.
+
+Naming Conventions
+- Use lowercase with dashes for directories (e.g., components/auth-wizard).
+- Favor named exports for components.
+
+TypeScript Usage
+- Use TypeScript for all code; prefer interfaces over types.
+- Avoid enums; use maps instead.
+- Use functional components with TypeScript interfaces.
+
+Syntax and Formatting
+- Use the "function" keyword for pure functions.
+- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
+- Use declarative JSX.
+
+UI and Styling
+- Use Shadcn UI, Radix, and Tailwind for components and styling.
+- Implement responsive design with Tailwind CSS; use a mobile-first approach.
+
+Performance Optimization
+- Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
+- Wrap client components in Suspense with fallback.
+- Use dynamic loading for non-critical components.
+- Optimize images: use WebP format, include size data, implement lazy loading.
+
+Key Conventions
+- Use 'nuqs' for URL search parameter state management.
+- Optimize Web Vitals (LCP, CLS, FID).
+- Limit 'use client':
+  - Favor server components and Next.js SSR.
+  - Use only for Web API access in small components.
+  - Avoid for data fetching or state management.
+- Follow Next.js docs for Data Fetching, Rendering, and Routing.
+
+Yarn-Specific Rules
+- **Lockfile Maintenance**:
+  - Always commit the `yarn.lock` file to ensure consistent dependency resolution.
+  - Use `yarn install` instead of `npm install` to prevent conflicts.
+- **Scripts and Commands**:
+  - Use `yarn` commands (`yarn add`, `yarn remove`, `yarn run`) for dependency and script management.
+  - Utilize `yarn workspaces` if managing a monorepo.
+- **Dependency Management**:
+  - Use `yarn add <package> -D` for adding devDependencies.
+  - Upgrade dependencies with `yarn upgrade-interactive --latest` for safe updates.
+  - Avoid globally installing packages; prefer project-level dependencies.
+- **Config and Customization**:
+  - Configure project-specific settings in `.yarnrc.yml`.
+  - Enable PnP if applicable (`yarn set version berry`) for performance and consistency.
+
+Supabase Integration
+- **API and Authentication**:
+  - Use Supabase's TypeScript SDK for API and authentication management.
+  - Secure API keys using `.env` files and Next.js environment variables (`process.env`).
+  - Prefer server-side authentication when possible for enhanced security.
+- **Database and Queries**:
+  - Leverage Supabase's row-level security (RLS) to enforce data permissions.
+  - Use database schemas to structure and separate data logically.
+  - Implement real-time subscriptions sparingly to optimize performance.
+- **Storage**:
+  - Utilize Supabase storage for managing media assets.
+  - Optimize upload handling by using pre-signed URLs.
+- **Performance and Caching**:
+  - Cache frequent queries with Supabase’s built-in caching options.
+  - Optimize database indices and queries for improved performance.
+- **Error Handling**:
+  - Handle errors explicitly from Supabase API calls using `try/catch` blocks.
+  - Provide user-friendly error messages for database and authentication issues.
+- **Testing**:
+  - Use Supabase CLI to spin up local environments for testing and development.
+  - Write integration tests for key Supabase interactions.
+
+Prisma Integration with Supabase
+- **Setup**:
+  - Add Prisma to your project using Yarn:
+    ```bash
+    yarn add prisma @prisma/client
+    yarn prisma init
+    ```
+  - Update `schema.prisma` to connect to Supabase:
+    ```prisma
+    generator client {
+      provider = "prisma-client-js"
+    }
+
+    datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL") // Supabase connection string
+    }
+    ```
+- **Environment Variables**:
+  - Store the `DATABASE_URL` in `.env`:
+    ```env
+    DATABASE_URL="postgresql://username:password@host:port/database"
+    ```
+- **Database Migrations**:
+  - Use Prisma migrations for schema changes:
+    ```bash
+    yarn prisma migrate dev --name init
+    ```
+  - Ensure compatibility with Supabase row-level security (RLS) and schemas.
+- **Schema and Model Directives**:
+  - Define models in Prisma matching Supabase tables:
+    ```prisma
+    model User {
+      id        Int      @id @default(autoincrement())
+      email     String   @unique
+      name      String?
+      createdAt DateTime @default(now())
+      posts     Post[]
+    }
+
+    model Post {
+      id        Int      @id @default(autoincrement())
+      title     String
+      content   String
+      userId    Int
+      user      User     @relation(fields: [userId], references: [id])
+    }
+    ```
+  - Maintain the `public` schema:
+    ```prisma
+    @@schema("public")
+    ```
+- **Testing**:
+  - Use the Supabase CLI for local environments.
+  - Write integration tests to validate Prisma-Supabase interactions.
+- **Real-Time**:
+  - Use Supabase's real-time features alongside Prisma for subscriptions.
