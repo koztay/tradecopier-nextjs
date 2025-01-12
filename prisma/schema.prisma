@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          UserRole  @default(CUSTOMER)
+  subscriptions Subscription[]
+  leaders       Leader[]
+  followers     Follower[]
+}
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  planType      PlanType
+  leaderSlots   Int
+  followerSlots Int
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum PlanType {
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+model Leader {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  accountId     String    @unique
+  serverAddress String
+  name          String
+  platform      Platform
+  isActive      Boolean   @default(true)
+  followers     Follower[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Follower {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  leaderId      String
+  leader        Leader    @relation(fields: [leaderId], references: [id])
+  accountId     String    @unique
+  serverAddress String
+  name          String
+  platform      Platform
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Platform {
+  MT4
+  MT5
+}
+
+model Trade {
+  id            String    @id @default(cuid())
+  leaderId      String
+  symbol        String
+  orderType     OrderType
+  volume        Float
+  openPrice     Float
+  closePrice    Float?
+  takeProfit    Float?
+  stopLoss      Float?
+  openTime      DateTime
+  closeTime     DateTime?
+  status        TradeStatus
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum OrderType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
