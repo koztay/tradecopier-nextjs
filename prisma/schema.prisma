@@ -11,15 +11,17 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String         @id @default(cuid())
+  email         String         @unique
   name          String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  role          UserRole       @default(CUSTOMER)
   subscriptions Subscription[]
   leaders       Leader[]
   followers     Follower[]
@@ -51,32 +53,32 @@ enum PlanType {
 }
 
 model Leader {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  accountId     String    @unique
+  user          User       @relation(fields: [userId], references: [id])
+  accountId     String     @unique
   serverAddress String
   name          String
   platform      Platform
-  isActive      Boolean   @default(true)
+  isActive      Boolean    @default(true)
   followers     Follower[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Follower {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
   leaderId      String
-  leader        Leader    @relation(fields: [leaderId], references: [id])
-  accountId     String    @unique
+  leader        Leader   @relation(fields: [leaderId], references: [id])
+  accountId     String   @unique
   serverAddress String
   name          String
   platform      Platform
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum Platform {
@@ -85,20 +87,20 @@ enum Platform {
 }
 
 model Trade {
-  id            String    @id @default(cuid())
-  leaderId      String
-  symbol        String
-  orderType     OrderType
-  volume        Float
-  openPrice     Float
-  closePrice    Float?
-  takeProfit    Float?
-  stopLoss      Float?
-  openTime      DateTime
-  closeTime     DateTime?
-  status        TradeStatus
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String      @id @default(cuid())
+  leaderId   String
+  symbol     String
+  orderType  OrderType
+  volume     Float
+  openPrice  Float
+  closePrice Float?
+  takeProfit Float?
+  stopLoss   Float?
+  openTime   DateTime
+  closeTime  DateTime?
+  status     TradeStatus
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 enum OrderType {
