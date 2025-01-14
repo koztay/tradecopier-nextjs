@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from "@/components/ui/use-toast"
 import { Toaster } from '@/components/ui/toaster'
 
 export default function RegisterPage() {
