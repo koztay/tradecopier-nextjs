@@ -6,11 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { signUp } from '@/lib/supabase/auth'
+import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/use-toast'
+import { Toaster } from '@/components/ui/toaster'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -19,15 +22,46 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
+    
     setLoading(true)
     setError(null)
 
     try {
-      await signUp(email, password)
-      router.push('/auth/verify-email')
-      router.refresh()
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (signUpError) {
+        console.error('Signup error:', signUpError)
+        throw signUpError
+      }
+
+      if (data?.user) {
+        toast({
+          title: "Success",
+          description: "Account created successfully! Please check your email to verify your account.",
+        })
+        router.push('/auth/verify-email')
+      } else {
+        throw new Error('No user data returned')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Registration error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during registration'
+      setError(errorMessage)
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -91,6 +125,7 @@ export default function RegisterPage() {
           </CardFooter>
         </form>
       </Card>
+      <Toaster />
     </div>
   )
 } 
