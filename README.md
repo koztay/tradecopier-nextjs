@@ -77,6 +77,22 @@ This repository contains the codebase for a SaaS application designed to facilit
      METATRADER_API_KEY=your_metatrader_api_key
      ```
 
+   Use the following approach for the authentication:
+
+   ```
+      createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+         auth: {
+            flowType: 'pkce',
+            detectSessionInUrl: true,
+            persistSession: true,
+         },
+      }
+      )
+   ```
+
 4. Initialize the database:
    ```bash
    yarn prisma migrate dev --name init
