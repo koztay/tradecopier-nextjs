@@ -1,17 +1,19 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createClient() {
-  return createServerClient(
+export async function createClient() {
+  const cookieStore = await cookies()
+  
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value
+          return cookieStore.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookies().set({
+          cookieStore.set({
             name,
             value,
             ...options,
@@ -22,7 +24,7 @@ export function createClient() {
           })
         },
         remove(name: string, options: CookieOptions) {
-          cookies().delete({
+          cookieStore.delete({
             name,
             path: options.path ?? '/',
           })
@@ -30,10 +32,12 @@ export function createClient() {
       },
     }
   )
+
+  return supabase
 }
 
 export async function getServerSession() {
-  const supabase = createClient()
+  const supabase = await createClient()
   try {
     const { data: { session } } = await supabase.auth.getSession()
     return session

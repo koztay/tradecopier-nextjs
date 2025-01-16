@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { ConnectMT5Account } from '@/components/mt5/connect-account'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [leaderAccounts, setLeaderAccounts] = useState<any[]>([])
+  const [followerAccounts, setFollowerAccounts] = useState<any[]>([])
 
   useEffect(() => {
     // Check initial session
@@ -28,6 +31,7 @@ export default function DashboardPage() {
       }
 
       setUser(session.user)
+      loadAccounts(session.user.id)
       setLoading(false)
     })
 
@@ -38,6 +42,7 @@ export default function DashboardPage() {
         return
       }
       setUser(session.user)
+      loadAccounts(session.user.id)
       setLoading(false)
     })
 
@@ -45,6 +50,37 @@ export default function DashboardPage() {
       subscription.unsubscribe()
     }
   }, [router])
+
+  const loadAccounts = async (userId: string) => {
+    try {
+      // Load leader accounts
+      const { data: leaders, error: leaderError } = await supabase
+        .from('Leader')
+        .select('*')
+        .eq('userId', userId)
+        .eq('isActive', true);
+
+      if (leaderError) throw leaderError;
+      setLeaderAccounts(leaders || []);
+
+      // Load follower accounts
+      const { data: followers, error: followerError } = await supabase
+        .from('Follower')
+        .select('*')
+        .eq('userId', userId)
+        .eq('isActive', true);
+
+      if (followerError) throw followerError;
+      setFollowerAccounts(followers || []);
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load trading accounts",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -88,37 +124,67 @@ export default function DashboardPage() {
         </Button>
       </div>
       
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Welcome to Your Dashboard</CardTitle>
-          <CardDescription>
-            You are logged in as {user?.email}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4">Your account is ready to start copying trades.</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Leader Accounts</CardTitle>
-                <CardDescription>Manage your leader trading accounts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline">Add Leader Account</Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Follower Accounts</CardTitle>
-                <CardDescription>Manage your follower trading accounts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline">Add Follower Account</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Leader Accounts</CardTitle>
+            <CardDescription>Accounts that other traders can copy from</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {leaderAccounts.length > 0 ? (
+              <div className="space-y-4">
+                {leaderAccounts.map((account) => (
+                  <Card key={account.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{account.name}</p>
+                          <p className="text-sm text-muted-foreground">Account ID: {account.accountId}</p>
+                        </div>
+                        <Button variant="outline" size="sm">Manage</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No leader accounts connected yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Follower Accounts</CardTitle>
+            <CardDescription>Accounts that copy trades from leaders</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {followerAccounts.length > 0 ? (
+              <div className="space-y-4">
+                {followerAccounts.map((account) => (
+                  <Card key={account.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{account.name}</p>
+                          <p className="text-sm text-muted-foreground">Account ID: {account.accountId}</p>
+                        </div>
+                        <Button variant="outline" size="sm">Manage</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No follower accounts connected yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="md:col-span-2">
+          <ConnectMT5Account />
+        </div>
+      </div>
     </div>
   )
 } 
